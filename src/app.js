@@ -7,6 +7,7 @@ const app = express();
 // cors ka use kyu krte hai?
 // jab humara frontend alag server pr host hota hai
 // aur backend alag server pr hota hai
+
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN,
@@ -40,4 +41,4 @@ app.use(express.static("public"));
 // aur unhe req.cookies object me store krta hai
 app.use(cookieParser());
 
-export {app};
+export { app };
