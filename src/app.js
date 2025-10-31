@@ -10,6 +10,8 @@ const app = express();
 
 app.use(
   cors({
+    // origin ka mtlb hai ki kaunse domains se requests allow karni hai
+    
     origin: process.env.CORS_ORIGIN,
     credentials: true,
     // credentials ka mtlb hai ki cookies ko allow krna
@@ -30,7 +32,7 @@ app.use(express.json({ limit: "20kb" }));
 // jo form submissions me aata hai
 // parse ka mtlb data ko read krna aur use karna hota hai
 app.use(express.urlencoded({ extended: true, limit: "20kb" }));
-
+// extended:true ka mtlb hai ki hum nested objects ko bhi parse kr sakte hai mtlab agar form me koi object hai to use bhi parse kr lega
 // static ka use kya hai?
 // static files jaise images, css, js files ko serve krne ke liye
 // public folder ko static folder bana diya hai

@@ -54,11 +54,10 @@ const userSchema = new mongoose.Schema(
 // pre-save middleware to hash password before saving the user document
 userSchema.pre("save", async function (next) {
   // this refers to the current user document being saved
-  // condition to check if the password field has been modified
+  // condition to check if the password field has been not modified
   // agar password field modify nhi hui hai toh next() ko call kar do
   // ! nhi hui hai toh next() ko call kar do
   if (!this.isModified("password")) return next();
-
   // Password hashing before saving the user document
   // hash doh(2) chezze leta h.. ki kya hash karna h aur kitne rounds me karna h..
   this.password = await bcrypt.hash(this.password, 10);
@@ -67,7 +66,7 @@ userSchema.pre("save", async function (next) {
 
 // 2 :-
 
-// userSchema ke andar objects hote hain methods jisme hum custom methods define kar sakte hain isPasswordCorrect jese method ko define kiya gaya h..
+// userSchema ke andar objects hote hain = vo methods jisme hum custom methods define kar sakte hain isPasswordCorrect jese method ko define kiya gaya h..
 userSchema.methods.isPasswordCorrect = async function (password) {
   //   bcrypt.compare function ka use karke hum user ke entered password ko hashed password se compare karte hain
   // compare doh chezze leta h.. ki pehla h entered password jo string h.. Aur dusra h hashed password jo database me stored h.. or return true or false krta h..
