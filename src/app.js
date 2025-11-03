@@ -11,7 +11,7 @@ const app = express();
 app.use(
   cors({
     // origin ka mtlb hai ki kaunse domains se requests allow karni hai
-    
+
     origin: process.env.CORS_ORIGIN,
     credentials: true,
     // credentials ka mtlb hai ki cookies ko allow krna
@@ -37,10 +37,21 @@ app.use(express.urlencoded({ extended: true, limit: "20kb" }));
 // static files jaise images, css, js files ko serve krne ke liye
 // public folder ko static folder bana diya hai
 app.use(express.static("public"));
-
 // cookie-parser kya hota hai?
 // ye ek middleware hai jo cookies ko parse krta hai
 // aur unhe req.cookies object me store krta hai
 app.use(cookieParser());
+app.get("/",(req,res)=>{
+  res.send ("Server is running")
+})
 
+// routes :-
+
+import userRouter from "./routes/user.routes.js";
+
+// routes declaration :-
+// router ko laane ke liye aap.use() yani middleware ke roop me use karte hai
+app.use("/api/v1/users", userRouter); // prefix /users ka mtlb hai ki ye saare routes /users se start honge logic ye hai ki humare sare user related routes yha honge
+// ab jab bhi koi request /api/v1/users pr aayegi to wo userRouter me jayegi
+// http:localhost:8000/api/v1/users/register  // pe aayega
 export { app };

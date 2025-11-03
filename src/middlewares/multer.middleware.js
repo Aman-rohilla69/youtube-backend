@@ -10,7 +10,7 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     // file.originalname se hume file ka original naam milta h
     // hum yahan file ka naam change kr sakte h ya phir same rakh sakte h
-    cb(null, Date.now() + "-" + file.originalname);
+    cb(null,file.originalname);
   },
 });
 

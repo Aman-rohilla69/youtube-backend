@@ -1,0 +1,110 @@
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { User } from "../models/User.js";
+import { uploadOnCloudinary, uploadToCloudinary } from "../utils/cloudinary.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+
+// registration func:-
+const registerUser = asyncHandler(async (req, res) => {
+  // registerUser Steps :-
+  // get users details from frontend
+  // validation :- not empty , check krna ki sb thik h.. ya nhi
+  // check if user alreday exists : username, email se
+  // check for images, check for avatar validation
+  // agar ye images available h.. toh cloudinary pr bhej doh, fir isme check kro ki avatar h.. ya nhi
+  // create user object  :- create entry in db
+  // remove password and refresh token from response / to user
+  // check kro ki user create hua ki nhi /response aaya ki nhi
+  // agar hoo gya to response bhej do frontend ko ki user create ho gya
+  //  agar nhi hua to error bhej do
+
+  // req.body ka kya use h..?
+  // req body ka mtlb h.. frontend se user backend pr request bhejta h.. json mai.
+
+  const { fullName, email, username, password } = req.body;
+  console.log("username : ", username);
+  // some() ka use h..?
+  // ye check karne ke liye ki koi bhi field empty toh nahi hai
+  // trim () ka use h..?
+  // ye string ke starting aur ending spaces ko remove karne ke liye use hota h..
+  if (
+    [fullName, email, username, password].some((field) => field?.trim() === "") // toh automatically true return krdega
+  ) {
+    throw new ApiError(400, "All fields are required");
+  }
+  // check if user already exists
+  // findOne() ka use h..?
+  // ye mongoose ka method h.. jo ki database me se ek document ko find krta h.. based on the given criteria
+  // $or ka use h..?
+  // ye MongoDB operator h.. jo ki multiple conditions me se kisi ek condition ke true hone pr document ko return krta h..
+  const existedUser = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+  if (existedUser) {
+    throw new ApiError(409, "User already exists with this username or email");
+  }
+  // iss condition ko step by step kro
+  // check for images
+  // req.files ka use h..?
+  // ye multer middleware ke through aata h.. jo ki uploaded files ko handle krta h..
+  // avatar or coverImage check krna h..
+  // ?. ka use h..?
+  // ye optional chaining operator h.. jo ki check krta h.. ki object ya property exist krti h.. ya nhi.. agr exist krti h.. toh hi aage access krta h..
+  // [0] ka use h..?
+  // kyuki multer me files array ke form me aati h.. toh hum first file ko access krne ke liye [0] use krte h..
+  // .path ka use h..?
+  // ye file ka local path return krta h.. jahan file store hui h..
+  const avatarLocalPath = req.files?.avatar[0]?.path;
+  console.log(req.files.avatar);
+  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  console.log(req.files.coverImage);
+  // check kr rhe h.. ki avatar file h.. ya nhi
+  // coverImage optional h.. toh uske liye check nhi krna h..
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is required");
+  }
+  // upload images to cloudinary
+  // uploadOnCloudinary ka use krke hum local file ko cloudinary pr upload kr rhe h..
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+  if (!avatar) {
+    throw new ApiError(400, "Error in uploading avatar file");
+  }
+
+  // create user object to store in db
+
+  const user = await User.create({
+    fullName,
+    avatar: avatar.url, // avatar ka url hume cloudinary se milta h.. upload hone ke baad toh uss url ko hi store krna h.. db me
+    coverImage: coverImage?.url || "", // coverImage optional h.. toh agr nhi h.. toh empty string store krdo
+    email,
+    password,
+    username: username.toLowerCase(), // username ko lowercase me store krna h.. taaki case sensitivity na ho
+  });
+
+  // user object me se password and refreshToken ko remove krke response bhejna h..
+  // createdUser me hum user ko dobara se find krke la rhe h.. by id.. taaki hume password and refreshToken na mile
+  const createdUser = await User.findById(user._id).select(
+    // .select() ka use krke hum specific fields ko include ya exclude kr sakte h.. yahan hum password and refreshToken ko exclude kr rhe h..
+    "-password -refreshToken",
+  );
+
+  if (!createdUser) {
+    throw new ApiError(500, "User creation failed ! while regestering");
+  }
+
+  // send response to frontend
+
+  return res
+    .status(201)
+    .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
+});
+
+
+
+export { registerUser };
+
+// front user details
+// check krni h.. ki
+//
