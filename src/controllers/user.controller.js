@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { User } from "../models/User.js";
-import { uploadOnCloudinary, uploadToCloudinary } from "../utils/cloudinary.js";
+import { User } from "../models/user.model.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 // registration func:-
@@ -22,7 +22,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // req body ka mtlb h.. frontend se user backend pr request bhejta h.. json mai.
 
   const { fullName, email, username, password } = req.body;
-  console.log("username : ", username);
+  // console.log(req.body);
   // some() ka use h..?
   // ye check karne ke liye ki koi bhi field empty toh nahi hai
   // trim () ka use h..?
@@ -55,9 +55,20 @@ const registerUser = asyncHandler(async (req, res) => {
   // .path ka use h..?
   // ye file ka local path return krta h.. jahan file store hui h..
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  console.log(req.files.avatar);
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
-  console.log(req.files.coverImage);
+  // console.log(req.files.avatar);
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+  let coverImageLocalPath;
+  // req.files hamare pass aayi h.. ya nhi && fir array aaya h.. ya nhi && or agar req.files array mai h.. toh uski length 0 se bdi honi chaiye..tb  {toh coverimage ke 0th element mai se path nikal lo }
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files.coverImage[0].path;
+  }
+
+  // console.log(req.files.coverImage);
   // check kr rhe h.. ki avatar file h.. ya nhi
   // coverImage optional h.. toh uske liye check nhi krna h..
   if (!avatarLocalPath) {
@@ -100,8 +111,6 @@ const registerUser = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
 });
-
-
 
 export { registerUser };
 

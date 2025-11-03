@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
-import { fs } from "fs";
+import fs from "fs";
 
 // Configure Cloudinary with environment variables
 // cloudinary.config() ka use krke hum apne cloudinary account ko configure krte hain
@@ -18,13 +18,11 @@ const uploadOnCloudinary = async (localFilePath) => {
 
     // upload the file on cloudinary
     // cloudinary.uploader.upload() ka use krke hum apne local file ko cloudinary par upload kr rhe h.
-
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
     // file has been uploaded successfully
-    console.log("file is uploaded on cloudinary");
-    console.log("response :", response.url);
+    fs.unlinkSync(localFilePath);
     return response;
 
     // ab hum local file ko delete kr denge fs.unlinkSync() ka use krke
@@ -36,5 +34,4 @@ const uploadOnCloudinary = async (localFilePath) => {
     throw error;
   }
 };
-
 export { uploadOnCloudinary };
