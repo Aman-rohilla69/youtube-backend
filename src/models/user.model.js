@@ -79,7 +79,7 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 // Ye method user ke liye ek access token generate karta hai jo authentication ke liye use hota hai.
 userSchema.methods.generateAccessToken = function () {
   // sign method ka use karke hum JWT token generate karte hain ye teen cheeze leta h.. 1 :- payload jisme user ki information hoti h.. 2 :- secret key jo token ko sign karne ke liye use hoti h.. 3 :- options jisme token ka expiry time wagaira set karte hain..
-  jwt.sign(
+  return jwt.sign(
     {
       _id: this._id, // payload me hum user ka id, email, username, fullName wagaira rakhte hain..
       email: this.email,

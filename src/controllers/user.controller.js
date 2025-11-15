@@ -3,6 +3,26 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
+
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId); // Find the user by ID in the database
+    const accessToken = user.generateAccessToken(); // This method should be defined in your User model to generate an access token
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken; // Save the refresh token in the user document
+    await user.save({ validateBeforeSave: false }); // Save the user document with the new refresh token in the database
+    // validateBeforeSave: false is used to skip validation for the refreshToken field, as it is not required during user registration or login
+    // This is useful when you want to update the user document without triggering validation errors for fields that are not required at that moment
+    return { accessToken, refreshToken }; // Return both tokens
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "something went wrong! while generating refresh and access tokens",
+    );
+  }
+};
 
 // registration func:-
 const registerUser = asyncHandler(async (req, res) => {
@@ -112,8 +132,148 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  // req body se data lena h..
+  // useke baad check krna h.. ki username or email h.. ya nhi
+  // find the user mtlb vo db mai exist krta h.. ya nhi
+  // agar user mil jata h.. toh password check krvao
+  // agar password shi h.. toh access and refresh token generate honge or
+  // user ko send honge..cookies mai
 
-// front user details
-// check krni h.. ki
-//
+  // req body se data lena h..
+  const { email, username, password } = req.body;
+  console.log(email);
+
+  // useke baad check krna h.. ki username or email h.. ya nhi
+  if (!username && !email) {
+    throw new ApiError(400, "username or email is required");
+  }
+
+  // find the user mtlb vo db mai exist krta h.. ya nhi.
+  const user = await User.findOne({ $or: [{ username }, { email }] });
+  if (!user) {
+    throw new ApiError(404, "user doesn't exist");
+  }
+
+  // agar user mil jata h.. toh password check krvao
+  const isPasswordValid = await user.isPasswordCorrect(password);
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid user credentials");
+  }
+
+  // agar password shi h.. toh access and refresh token generate honge or
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id,
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken",
+  );
+
+  // cookies bhejni h..
+
+  // true krne se ye sirf server se modify hoo sakti h..
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        201,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "user logged In successfully",
+      ),
+    );
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+  // remove refreshTokens.
+  // remove cookies data.
+
+  // remove refresh token from db :-
+  await User.findByIdAndUpdate(
+    // req.user._id is the id of the user who is logged in, req.user is set by the verifyJWT middleware
+    req.user._id,
+    {
+      $set: {
+        // $set update krne ke liye use hota h.. database mai values ko.
+        refreshToken: undefined,
+      },
+    },
+    {
+      // new value
+      new: true,
+    },
+  );
+
+  // remove cookies data.
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(201, {}, "User logged Out"));
+});
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  // req.cookies se refresh token ko fetch kr rhe h.. , req.body se bhi vhi kaam kr rhe h.. agar koi mobile use krta hoo tb.
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Unauthorised Request");
+  }
+
+  // jwt.verify 2 se 3 cheeje leta h.. phela toh token string wala aur secret information mtlb secret tokens.
+  try {
+    const decodedToken = jwt.verify(incomingRefreshToken, REFRESH_TOKEN_SECRET);
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) {
+      throw new ApiError(401, "Invalid Refresh Token");
+    }
+
+    if (incomingRefreshToken !== user?.refreshToken) {
+      throw new ApiError(401, "Refresh Token is expired or used");
+    }
+
+    // tokens cookies mai bhejne ke liye..
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { accessToken, newRefreshToken } =
+      await generateAccessAndRefreshTokens(user._id);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken: newRefreshToken },
+          "Access token refreshed",
+        ),
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid refresh token");
+  }
+});
+
+export { registerUser, loginUser, logoutUser,refreshAccessToken };

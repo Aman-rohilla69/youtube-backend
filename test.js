@@ -8,7 +8,7 @@
 // remove password and refresh token from response / to user
 // check kro ki user create hua ki nhi /response aaya ki nhi
 // agar hoo gya to response bhej do frontend ko ki user create ho gya
-//  agar nhi hua to error bhej do
+// agar nhi hua to error bhej do
 // import User from "./src/models/user.model.js";
 // import { ApiError } from "./src/utils/ApiError";
 // import { ApiResponse } from "./src/utils/ApiResponse";
@@ -37,6 +37,15 @@
 //   // check for images, check for avatar
 //   const avatarLocalPath = await req.fiels?.avatar[0]?.path;
 //   const coverImageLocalPath = await req.fiels?.coverImage[0]?.path;
+
+// let coverImageLocalPath;
+// if (
+//   req.files &&
+//   Array.isArray[req.files.coverImage] &&
+//   req.files.coverImage.length > 0
+// ) {
+//   coverImageLocalPath = req.files.coverImage[0].path;
+// }
 
 //   // check kr rhe h.. ki avatar file h.. ya nhi
 //   // coverImage optional h.. toh uske liye check nhi krna h..
